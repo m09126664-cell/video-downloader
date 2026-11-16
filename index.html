@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Video İndirici</title>
+<style>
+:root{color-scheme:dark;--bg:#080d18;--panel:#111b2d;--line:#263651;--muted:#9aabc4;--accent:#65e6b5}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Arial,sans-serif;background:radial-gradient(circle at 50% 0,#17304a 0,#080d18 48%);color:#f4f7fb;display:grid;place-items:center;padding:24px}
+main{width:min(680px,100%);background:#101a2bed;border:1px solid var(--line);border-radius:24px;padding:clamp(22px,5vw,42px);box-shadow:0 24px 80px #0008}
+.logo{width:54px;height:54px;border-radius:17px;background:#173d3a;display:grid;place-items:center;font-size:27px;margin-bottom:20px}
+h1{font-size:clamp(28px,5vw,40px);margin:0 0 10px}p{color:var(--muted);line-height:1.6}
+.drop{margin:26px 0 16px;border:2px dashed #426078;border-radius:18px;padding:30px 18px;text-align:center;background:#0b1422;transition:.2s}
+.drop.over{border-color:var(--accent);background:#102b2a}
+.drop strong{display:block;font-size:18px;margin-bottom:8px}
+button,.pick{border:0;border-radius:12px;padding:13px 19px;font-weight:700;cursor:pointer;background:var(--accent);color:#062219;display:inline-block}
+button:disabled{opacity:.4;cursor:not-allowed}
+#file{display:none}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+.secondary{background:#24344d;color:#eaf1fa}
+video{width:100%;max-height:360px;border-radius:14px;background:#05080d;margin-top:18px;display:none}
+#details{font-size:14px;color:#c5d3e6;overflow-wrap:anywhere}
+.note{font-size:12px;border-top:1px solid var(--line);padding-top:16px;margin-top:24px}
+</style>
+</head>
+<body>
+<main>
+ <div class="logo">⬇️</div>
+ <h1>Video İndirici</h1>
+ <p>Kendi videonu veya indirme iznin olan bir video dosyasını seç, önizle ve cihazına kaydet. Dosyan sunucuya yüklenmez; işlem tarayıcında yapılır.</p>
+ <section class="drop" id="drop">
+  <strong>Videonu buraya bırak</strong>
+  <p>veya bilgisayarından bir dosya seç</p>
+  <label class="pick" for="file">Video seç</label>
+  <input id="file" type="file" accept="video/*">
+ </section>
+ <div id="details">Henüz video seçilmedi.</div>
+ <video id="preview" controls playsinline></video>
+ <div class="actions">
+  <button id="download" disabled>Videoyu indir</button>
+  <button id="clear" class="secondary" disabled>Temizle</button>
+ </div>
+ <p class="note">Not: Bu araç YouTube, TikTok veya diğer platformların bağlantılarını çözmez ve korumaları aşmaz. Yalnızca cihazından seçtiğin video dosyalarını işler. Yalnızca sana ait veya indirme iznin bulunan içerikleri kullan.</p>
+</main>
+<script>
+const input=document.getElementById('file'),drop=document.getElementById('drop'),preview=document.getElementById('preview'),details=document.getElementById('details'),download=document.getElementById('download'),clear=document.getElementById('clear');
+let currentUrl='';
+function formatSize(n){if(n<1024*1024)return (n/1024).toFixed(1)+' KB';return (n/1024/1024).toFixed(2)+' MB'}
+function loadFile(file){
+ if(!file)return;
+ if(!file.type.startsWith('video/')){details.textContent='Lütfen geçerli bir video dosyası seç.';return}
+ if(currentUrl)URL.revokeObjectURL(currentUrl);
+ currentUrl=URL.createObjectURL(file);preview.src=currentUrl;preview.style.display='block';
+ details.textContent=file.name+' • '+formatSize(file.size);
+ download.disabled=false;clear.disabled=false;
+ download.onclick=()=>{const a=document.createElement('a');a.href=currentUrl;a.download=file.name||'video';document.body.appendChild(a);a.click();a.remove()};
+}
+input.addEventListener('change',()=>loadFile(input.files[0]));
+['dragenter','dragover'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>loadFile(e.dataTransfer.files[0]));
+clear.addEventListener('click',()=>{if(currentUrl)URL.revokeObjectURL(currentUrl);currentUrl='';input.value='';preview.pause();preview.removeAttribute('src');preview.load();preview.style.display='none';details.textContent='Henüz video seçilmedi.';download.disabled=true;clear.disabled=true});
+</script>
+</body>
+</html>
