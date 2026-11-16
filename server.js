@@ -8,6 +8,17 @@ import ipaddr from "ipaddr.js";
 
 const app = express();
 app.set("trust proxy", 1);
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin === "https://m09126664-cell.github.io") {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  }
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
 app.use(rateLimit({ windowMs: 60_000, limit: 10, standardHeaders: true, legacyHeaders: false }));
 
 const MAX_BYTES = 500 * 1024 * 1024;
