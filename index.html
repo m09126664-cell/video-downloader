@@ -27,12 +27,14 @@ footer{border-top:1px solid var(--line);margin-top:25px;padding-top:17px;font-si
  <div class="logo">⬇️</div>
  <h1>Video İndirici</h1>
  <p>İndirmeye izin verilen doğrudan video dosyasının bağlantısını aşağıya yapıştır.</p>
+ <label for="api" style="display:block;margin-top:24px;color:#c4d0e0;font-size:13px">Sunucu adresi (bir kez girmen yeterli)</label>
+ <input id="api" type="url" placeholder="https://uygulaman.onrender.com" style="width:100%;margin-top:8px">
  <form class="input-wrap" id="form">
   <input id="url" type="url" placeholder="https://site.com/video.mp4" autocomplete="url" required>
   <button id="go" type="submit">İndir</button>
  </form>
  <div id="status" role="status" aria-live="polite">MP4, WEBM ve MOV gibi doğrudan video dosyası bağlantıları desteklenir.</div>
- <div class="hint">🔗 <strong>Önemli:</strong> Sayfa adresi değil, doğrudan video dosyasının bağlantısı olmalı. Bağlantıyı sağlayan sunucunun tarayıcıdan indirmeye (CORS) izin vermesi gerekir.</div>
+ <div class="hint">🔗 <strong>Önemli:</strong> Yalnızca doğrudan video dosyası bağlantısı kullan. Sunucu adresini aşağıdaki alana bir kez kaydetmen gerekir.</div>
  <footer>Bu araç yalnızca sana ait veya indirme iznin bulunan doğrudan video dosyaları içindir. YouTube, TikTok ve benzeri platform sayfalarını çözmez; erişim kısıtlamalarını veya korumaları aşmaz. Video dosyası bu siteye yüklenmez.</footer>
 </main>
 <script>
@@ -40,30 +42,33 @@ const form=document.getElementById('form');
 const field=document.getElementById('url');
 const status=document.getElementById('status');
 const button=document.getElementById('go');
-const allowedExtensions=/\\.(mp4|webm|mov|m4v|ogv)(?:$)/i;
+const apiField=document.getElementById('api');
+apiField.value=localStorage.getItem('videoApiBase')||'';
+apiField.addEventListener('change',()=>localStorage.setItem('videoApiBase',apiField.value.trim().replace(/\\/$/,'')));
 form.addEventListener('submit',async event=>{
  event.preventDefault();
- let parsed;
- try{parsed=new URL(field.value.trim())}catch{status.textContent='Geçerli bir bağlantı gir.';return}
- if(!['http:','https:'].includes(parsed.protocol)){status.textContent='Yalnızca http veya https bağlantıları kullanılabilir.';return}
- if(!allowedExtensions.test(parsed.pathname)){status.textContent='Bu, doğrudan video dosyası bağlantısı gibi görünmüyor. URL .mp4, .webm veya .mov ile bitmeli.';return}
- button.disabled=true;button.textContent='İndiriliyor…';status.textContent='Video bağlantısı kontrol ediliyor…';
+ let videoUrl;
+ try{videoUrl=new URL(field.value.trim())}catch{status.textContent='Geçerli bir video bağlantısı gir.';return}
+ if(!['http:','https:'].includes(videoUrl.protocol)){status.textContent='Yalnızca http/https bağlantıları kullanılabilir.';return}
+ const api=apiField.value.trim().replace(/\\/$/,'');
+ if(!api){status.textContent='Önce sunucu adresini gir. Sunucu kurulumu için README dosyasını aç.';apiField.focus();return}
+ try{new URL(api)}catch{status.textContent='Sunucu adresi geçersiz.';return}
+ button.disabled=true;button.textContent='İndiriliyor…';status.textContent='İzin verilen doğrudan video bağlantısı kontrol ediliyor…';
  try{
-  const response=await fetch(parsed.href,{mode:'cors'});
-  if(!response.ok)throw new Error('HTTP '+response.status);
-  const type=response.headers.get('content-type')||'';
-  if(type && !type.toLowerCase().startsWith('video/') && !type.toLowerCase().includes('octet-stream'))throw new Error('Bu bağlantı video dosyası döndürmedi.');
+  const response=await fetch(api+'/api/download?url='+encodeURIComponent(videoUrl.href));
+  if(!response.ok){
+   let message='İndirme başarısız.';
+   try{const data=await response.json();message=data.error||message}catch{}
+   throw new Error(message);
+  }
   const blob=await response.blob();
   if(!blob.size)throw new Error('Video dosyası boş.');
   const objectUrl=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=objectUrl;
-  const name=decodeURIComponent(parsed.pathname.split('/').pop()||'video.mp4');
-  a.download=name;document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(objectUrl),60000);
-  status.textContent='İndirme başlatıldı: '+name;
- }catch(error){
-  status.textContent='İndirilemedi. Sunucu bağlantıya tarayıcıdan erişime izin vermiyor olabilir (CORS) veya bu doğrudan video dosyası değil. Ayrıntı: '+error.message;
- }finally{button.disabled=false;button.textContent='İndir'}
+  const a=document.createElement('a');a.href=objectUrl;a.download=decodeURIComponent(videoUrl.pathname.split('/').pop()||'video.mp4');
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(objectUrl),60000);
+  status.textContent='İndirme başlatıldı.';
+ }catch(error){status.textContent='İndirilemedi: '+error.message}
+ finally{button.disabled=false;button.textContent='İndir'}
 });
 </script>
 </body>
