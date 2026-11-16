@@ -44,13 +44,13 @@ const status=document.getElementById('status');
 const button=document.getElementById('go');
 const apiField=document.getElementById('api');
 apiField.value=localStorage.getItem('videoApiBase')||'';
-apiField.addEventListener('change',()=>localStorage.setItem('videoApiBase',apiField.value.trim().replace(/\\/$/,'')));
+apiField.addEventListener('change',()=>localStorage.setItem('videoApiBase',apiField.value.trim().replace(/\/$/,'')));
 form.addEventListener('submit',async event=>{
  event.preventDefault();
  let videoUrl;
  try{videoUrl=new URL(field.value.trim())}catch{status.textContent='Geçerli bir video bağlantısı gir.';return}
  if(!['http:','https:'].includes(videoUrl.protocol)){status.textContent='Yalnızca http/https bağlantıları kullanılabilir.';return}
- const api=apiField.value.trim().replace(/\\/$/,'');
+ const api=apiField.value.trim().replace(/\/$/,'');
  if(!api){status.textContent='Önce sunucu adresini gir. Sunucu kurulumu için README dosyasını aç.';apiField.focus();return}
  try{new URL(api)}catch{status.textContent='Sunucu adresi geçersiz.';return}
  button.disabled=true;button.textContent='İndiriliyor…';status.textContent='İzin verilen doğrudan video bağlantısı kontrol ediliyor…';
